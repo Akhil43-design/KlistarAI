@@ -1,0 +1,87 @@
+.main {
+  min-height: 100vh;
+  display: flex;
+  flex-direction: column;
+  padding: 0;
+  position: relative;
+}
+
+.content {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  width: 100%;
+  animation: fadeIn 1s ease-out;
+  padding-top: 15vh;
+}
+
+.header {
+  text-align: center;
+  margin-bottom: 2rem;
+  height: 60px;
+  /* Reserve space */
+}
+
+.header h1 {
+  font-size: 3rem;
+  font-weight: 700;
+  letter-spacing: -0.05em;
+  color: var(--foreground);
+}
+
+@media (max-width: 600px) {
+  .header h1 {
+    font-size: 2rem;
+  }
+}
+
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+  }
+
+  to {
+    opacity: 1;
+  }
+}
+
+.titleContainer {
+  position: fixed;
+  /* Fixed to viewport */
+  top: 0;
+  left: 0;
+  width: 100vw;
+  height: 100vh;
+  pointer-events: none;
+  z-index: 2000;
+  transition: all 3s cubic-bezier(0.4, 0, 0.2, 1);
+  /* No flex centering here, we use absolute on child */
+}
+
+/* Remove .moved regarding height/align-items */
+.titleContainer.moved {
+  /* No layout changes needed on container, just child moves */
+}
+
+.mainTitle {
+  position: absolute;
+  top: 50%;
+  /* Start Dead Center */
+  left: 50%;
+  transform: translate(-50%, -50%);
+  font-size: 5rem;
+  font-weight: 700;
+  transition: all 3s cubic-bezier(0.4, 0, 0.2, 1);
+  text-align: center;
+  color: var(--foreground);
+  width: 100%;
+}
+
+.titleContainer.moved .mainTitle {
+  top: 30vh;
+  /* Move anchor to 30% down the screen */
+  transform: translate(-50%, -100%);
+  /* Shift up so the text SITS ON the 30% line */
+  font-size: 3.5rem;
+  /* Keep it relatively large as a header */
+}

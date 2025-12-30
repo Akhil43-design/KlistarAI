@@ -1,0 +1,14 @@
+fastapi==0.109.2
+uvicorn[standard]==0.27.1
+python-socketio==5.11.1
+python-dotenv==1.0.1
+numpy==1.26.4
+opencv-python-headless==4.9.0.80
+pillow==10.2.0
+google-genai==0.2.1
+python-kasa==0.6.2.1
+# Audio/Video dependencies
+pyaudio==0.2.14
+mss==9.0.1
+# Desktop automation (Mocked/Disabled in Cloud but listed for compatibility)
+pyautogui==0.9.54

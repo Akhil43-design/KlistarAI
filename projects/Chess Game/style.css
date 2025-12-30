@@ -1,0 +1,43 @@
+body {
+    font-family: Arial, sans-serif;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    height: 100vh;
+    background-color: #f0f0f0;
+    margin: 0;
+    flex-direction: column;
+}
+
+.game-board {
+    display: grid;
+    grid-template-columns: repeat(8, 60px);
+    grid-template-rows: repeat(8, 60px);
+    border: 2px solid #333;
+    box-shadow: 0 0 10px rgba(0,0,0,0.5);
+}
+
+.cell {
+    width: 60px;
+    height: 60px;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    font-size: 2em;
+    cursor: pointer;
+    position: relative; /* Important for animation positioning */
+}
+
+.cell.light {
+    background-color: #f0d9b5;
+}
+
+.cell.dark {
+    background-color: #b58863;
+}
+
+.cell.selected {
+    background-color: #a3ff73; /* Highlight selected piece */
+}
+
+/* Note: True drag-and-drop animation is complex, this setup facilitates smoother visual updates */

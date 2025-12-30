@@ -1,0 +1,7 @@
+<?xml version='1.0' encoding='utf-8'?>
+<resources>
+    <string name="app_name">KlistarAI</string>
+    <string name="title_activity_main">KlistarAI</string>
+    <string name="package_name">com.klistar.ai</string>
+    <string name="custom_url_scheme">com.klistar.ai</string>
+</resources>

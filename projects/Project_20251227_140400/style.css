@@ -1,0 +1,102 @@
+body {
+    font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    align-items: center;
+    height: 100vh;
+    background-color: #282c34;
+    color: #e0e0e0;
+    margin: 0;
+}
+
+.container {
+    text-align: center;
+    background: #3a3f4b;
+    padding: 30px;
+    border-radius: 15px;
+    box-shadow: 0 10px 30px rgba(0, 0, 0, 0.3);
+}
+
+h1 {
+    color: #61dafb;
+    margin-bottom: 10px;
+    font-size: 2.5em;
+}
+
+#status {
+    font-size: 1.2em;
+    margin-bottom: 20px;
+    color: #a0a0a0;
+}
+
+.game-board {
+    display: grid;
+    grid-template-columns: repeat(3, 100px);
+    grid-template-rows: repeat(3, 100px);
+    gap: 5px;
+    margin: 0 auto;
+    border: 3px solid #61dafb;
+    border-radius: 5px;
+}
+
+.cell {
+    background-color: #4b5263;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    font-size: 3em;
+    cursor: pointer;
+    transition: background-color 0.3s ease, transform 0.1s ease;
+    border-radius: 5px;
+    color: white;
+}
+
+.cell:hover {
+    background-color: #61dafb;
+    transform: scale(1.05);
+}
+
+.cell.x {
+    color: #ff5733; /* Vibrant Red-Orange for X */
+    text-shadow: 0 0 10px #ff573350;
+}
+
+.cell.o {
+    color: #33cfff; /* Vibrant Blue for O */
+    text-shadow: 0 0 10px #33cfff50;
+}
+
+#restartButton {
+    margin-top: 20px;
+    padding: 12px 25px;
+    font-size: 1em;
+    background-color: #61dafb;
+    border: none;
+    border-radius: 5px;
+    cursor: pointer;
+    transition: background-color 0.3s;
+    color: #282c34;
+    font-weight: bold;
+}
+
+#restartButton:hover {
+    background-color: #21a1f1;
+}
+
+/* Added for winning pulse effect */
+.cell.win {
+    animation: pulse 1s infinite alternate;
+    background-color: #4CAF50 !important; /* Distinct win background */
+}
+
+@keyframes pulse {
+    0% {
+        transform: scale(1);
+        box-shadow: 0 0 10px #4CAF50;
+    }
+    100% {
+        transform: scale(1.1);
+        box-shadow: 0 0 20px #4CAF50;
+    }
+}

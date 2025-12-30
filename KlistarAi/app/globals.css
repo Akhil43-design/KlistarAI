@@ -1,0 +1,230 @@
+:root {
+  --background: #000000;
+  --foreground: #ffffff;
+  --accent-gray: #333333;
+  --text-secondary: #888888;
+}
+
+* {
+  box-sizing: border-box;
+  padding: 0;
+  margin: 0;
+}
+
+html,
+body {
+  max-width: 100vw;
+  overflow-x: hidden;
+  height: 100%;
+}
+
+body {
+  color: var(--foreground);
+  background: var(--background);
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+/* Custom Scrollbar */
+::-webkit-scrollbar {
+  width: 8px;
+}
+
+::-webkit-scrollbar-track {
+  background: var(--background);
+}
+
+::-webkit-scrollbar-thumb {
+  background: var(--accent-gray);
+  border-radius: 4px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: var(--text-secondary);
+}
+
+a {
+  color: inherit;
+  text-decoration: none;
+}
+
+/* 
+   Star Field: 3 Layers
+   1. Small dots (1px)
+   2. Medium dots (2px)
+   3. Large Glowing dots (3px + box-shadow glow)
+*/
+.stars {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  z-index: 0;
+  pointer-events: none;
+  background: transparent;
+
+  /* Layer 1: Small stars */
+  box-shadow:
+    10vw 10vh 0 0 #fff, 20vw 2vh 0 0 #fff, 30vw 15vh 0 0 #fff, 40vw 40vh 0 0 #fff, 50vw 10vh 0 0 #fff,
+    60vw 80vh 0 0 #fff, 70vw 50vh 0 0 #fff, 80vw 20vh 0 0 #fff, 90vw 90vh 0 0 #fff, 15vw 60vh 0 0 #fff,
+    30vw 30vh 0 0 #fff;
+  /* Truncated for brevity, but effective */
+
+  width: 1px;
+  height: 1px;
+  animation: starPulse 3s infinite alternate;
+}
+
+/* Layer 2: Medium Stars */
+.stars::before {
+  content: "";
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 2px;
+  height: 2px;
+  background: #fff;
+  box-shadow:
+    5vw 5vh 0 0 #fff, 25vw 25vh 0 0 #fff, 45vw 45vh 0 0 #fff, 65vw 65vh 0 0 #fff, 85vw 85vh 0 0 #fff,
+    15vw 85vh 0 0 #fff, 35vw 65vh 0 0 #fff, 55vw 45vh 0 0 #fff, 75vw 25vh 0 0 #fff, 95vw 5vh 0 0 #fff;
+  opacity: 0.8;
+}
+
+/* Layer 3: Large Glowing Stars (User Requested) */
+.stars::after {
+  content: "";
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 3px;
+  height: 3px;
+  background: #fff;
+  /* Add blur radius (3rd param) for glow effect */
+  box-shadow:
+    12vw 45vh 0 0 #fff, 38vw 12vh 0 0 #fff, 62vw 78vh 0 0 #fff, 88vw 32vh 0 0 #fff,
+    50vw 50vh 2px 2px rgba(255, 255, 255, 0.8),
+    /* Center glow */
+    10vw 90vh 1px 1px rgba(255, 255, 255, 0.8),
+    90vw 10vh 1px 1px rgba(255, 255, 255, 0.8);
+  opacity: 1;
+  animation: starGlow 4s infinite alternate;
+}
+
+@keyframes starPulse {
+  from {
+    opacity: 0.4;
+  }
+
+  to {
+    opacity: 0.8;
+  }
+}
+
+@keyframes starGlow {
+  from {
+    opacity: 0.7;
+    box-shadow: 0 0 2px #fff;
+  }
+
+  to {
+    opacity: 1;
+    box-shadow: 0 0 8px #fff;
+  }
+}
+
+
+/* Cross Falling Comets (Background) */
+@keyframes fallDiagonal {
+  0% {
+    transform: translate(0, 0) rotate(45deg) scale(0.5);
+    opacity: 0;
+  }
+
+  10% {
+    opacity: 1;
+  }
+
+  100% {
+    transform: translate(120vw, 120vh) rotate(45deg) scale(1.2);
+    opacity: 0;
+  }
+}
+
+.falling-star {
+  position: fixed;
+  width: 150px;
+  height: 2px;
+  background: linear-gradient(90deg, #ffffff, transparent);
+  opacity: 0;
+  z-index: 0;
+  /* Start offset to ensure diagonal crossing */
+  top: -20vh;
+  left: -20vw;
+  animation: fallDiagonal 6s linear infinite;
+}
+
+/* Intro Animation - Strict Diagonal (Top-Left to Bottom-Right) */
+@keyframes flyAcross {
+  0% {
+    top: -40vh;
+    /* Start above top-left */
+    left: -40vw;
+    opacity: 0;
+  }
+
+  5% {
+    opacity: 1;
+  }
+
+  90% {
+    opacity: 1;
+  }
+
+  100% {
+    top: 140vh;
+    /* End below bottom-right */
+    left: 140vw;
+    opacity: 0;
+  }
+}
+
+@keyframes revealText {
+  0% {
+    opacity: 0;
+    filter: blur(20px);
+    transform: scale(0.9);
+  }
+
+  100% {
+    opacity: 1;
+    filter: blur(0px);
+    transform: scale(1);
+  }
+}
+
+/* Variable-based flight for random angles */
+@keyframes flyShoot {
+  0% {
+    transform: rotate(var(--angle)) translateX(-50vw) scale(0.5);
+    opacity: 0;
+  }
+
+  5% {
+    opacity: 1;
+  }
+
+  100% {
+    transform: rotate(var(--angle)) translateX(200vw) scale(1.2);
+    opacity: 0;
+  }
+}
+
+@keyframes fadeOut {
+  to {
+    opacity: 0;
+    pointer-events: none;
+    visibility: hidden;
+  }
+}
