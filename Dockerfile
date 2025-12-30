@@ -30,4 +30,4 @@ EXPOSE 8000
 
 # Run the server
 # Use 0.0.0.0 to bind to all interfaces (Required for Docker/Cloud)
-CMD ["sh", "-c", "uvicorn backend.server:app --host 0.0.0.0 --port $PORT"]
+CMD uvicorn backend.server:app --host 0.0.0.0 --port $PORT
