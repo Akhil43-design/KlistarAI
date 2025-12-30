@@ -13,3 +13,4 @@ mss==9.0.1
 # Desktop automation (Mocked/Disabled in Cloud but listed for compatibility)
 pyautogui==0.9.54
 httpx==0.27.0
+mediapipe==0.10.9
