@@ -290,10 +290,31 @@ try:
 except Exception as e:
     print(f"[KlistarAi] [WARN] Failed to initialize PyAudio (Headless/Cloud Mode): {e}")
 
-from cad_agent import CadAgent
-from web_agent import WebAgent
-from kasa_agent import KasaAgent
-from printer_agent import PrinterAgent
+# Safe Imports for Agents (Soft Fail)
+CadAgent = None
+WebAgent = None
+KasaAgent = None
+PrinterAgent = None
+
+try:
+    from cad_agent import CadAgent
+except Exception as e:
+    print(f"[KlistarAi] [WARN] CadAgent unavailable: {e}")
+
+try:
+    from web_agent import WebAgent
+except Exception as e:
+    print(f"[KlistarAi] [WARN] WebAgent unavailable: {e}")
+
+try:
+    from kasa_agent import KasaAgent
+except Exception as e:
+    print(f"[KlistarAi] [WARN] KasaAgent unavailable: {e}")
+
+try:
+    from printer_agent import PrinterAgent
+except Exception as e:
+    print(f"[KlistarAi] [WARN] PrinterAgent unavailable: {e}")
 
 class AudioLoop:
     def __init__(self, video_mode=DEFAULT_MODE, on_audio_data=None, on_video_frame=None, on_cad_data=None, on_web_data=None, on_transcription=None, on_tool_confirmation=None, on_cad_status=None, on_cad_thought=None, on_project_update=None, on_device_update=None, on_error=None, on_music_command=None, on_gesture=None, on_camera_toggle=None, on_hand_tracking_toggle=None, on_hand_landmarks=None, input_device_index=None, input_device_name=None, output_device_index=None, kasa_agent=None):
@@ -343,14 +364,29 @@ class AudioLoop:
             if self.on_cad_status:
                 self.on_cad_status(status_info)
         
-        self.cad_agent = CadAgent(on_thought=handle_cad_thought, on_status=handle_cad_status)
-        self.web_agent = WebAgent()
-        self.kasa_agent = kasa_agent if kasa_agent else KasaAgent()
-        self.printer_agent = PrinterAgent()
+        if CadAgent:
+            self.cad_agent = CadAgent(on_thought=handle_cad_thought, on_status=handle_cad_status)
+        else:
+            self.cad_agent = None
+
+        if WebAgent:
+            self.web_agent = WebAgent()
+        else:
+            self.web_agent = None
+
+        if kasa_agent:
+            self.kasa_agent = kasa_agent
+        elif KasaAgent:
+             self.kasa_agent = KasaAgent()
+        else:
+             self.kasa_agent = None
+             
+        if PrinterAgent:
+            self.printer_agent = PrinterAgent()
+        else:
+            self.printer_agent = None
 
         self.send_text_task = None
-        self.stop_event = asyncio.Event()
-        
         self.stop_event = asyncio.Event()
         
         self.permissions = {} # Default Empty (Will treat unset as True)
@@ -803,6 +839,12 @@ class AudioLoop:
         cad_output_dir = str(self.project_manager.get_current_project_path() / "cad")
         
         # Call the secondary agent with project path
+        # Call the secondary agent with project path
+        if not self.cad_agent:
+            print("[KlistarAi] [ERR] CadAgent is disabled.")
+            if self.on_error: self.on_error("CAD Agent is disabled in this environment.")
+            return
+
         cad_data = await self.cad_agent.generate_prototype(prompt, output_dir=cad_output_dir)
         
         if cad_data:
@@ -1207,47 +1249,52 @@ class AudioLoop:
 
                                 elif fc.name == "list_smart_devices":
                                     print(f"[KlistarAi DEBUG] [TOOL] Tool Call: 'list_smart_devices'")
-                                    # Use cached devices directly for speed
-                                    # devices_dict is {ip: SmartDevice}
                                     
-                                    dev_summaries = []
-                                    frontend_list = []
-                                    
-                                    for ip, d in self.kasa_agent.devices.items():
-                                        dev_type = "unknown"
-                                        if d.is_bulb: dev_type = "bulb"
-                                        elif d.is_plug: dev_type = "plug"
-                                        elif d.is_strip: dev_type = "strip"
-                                        elif d.is_dimmer: dev_type = "dimmer"
-                                        
-                                        # Format for Model
-                                        info = f"{d.alias} (IP: {ip}, Type: {dev_type})"
-                                        if d.is_on:
-                                            info += " [ON]"
-                                        else:
-                                            info += " [OFF]"
-                                        dev_summaries.append(info)
-                                        
-                                        # Format for Frontend
-                                        frontend_list.append({
-                                            "ip": ip,
-                                            "alias": d.alias,
-                                            "model": d.model,
-                                            "type": dev_type,
-                                            "is_on": d.is_on,
-                                            "brightness": d.brightness if d.is_bulb or d.is_dimmer else None,
-                                            "hsv": d.hsv if d.is_bulb and d.is_color else None,
-                                            "has_color": d.is_color if d.is_bulb else False,
-                                            "has_brightness": d.is_dimmable if d.is_bulb or d.is_dimmer else False
-                                        })
-                                    
-                                    result_str = "No devices found in cache."
-                                    if dev_summaries:
-                                        result_str = "Found Devices (Cached):\n" + "\n".join(dev_summaries)
-                                    
-                                    # Trigger frontend update
-                                    if self.on_device_update:
-                                        self.on_device_update(frontend_list)
+                                    if not self.kasa_agent:
+                                         result_str = "KasaAgent is disabled (missing dependencies)."
+                                         if self.on_error: self.on_error("Smart Home features disabled.")
+                                    else:
+                                         # Use cached devices directly for speed
+                                         # devices_dict is {ip: SmartDevice}
+                                         
+                                         dev_summaries = []
+                                         frontend_list = []
+                                         
+                                         for ip, d in self.kasa_agent.devices.items():
+                                             dev_type = "unknown"
+                                             if d.is_bulb: dev_type = "bulb"
+                                             elif d.is_plug: dev_type = "plug"
+                                             elif d.is_strip: dev_type = "strip"
+                                             elif d.is_dimmer: dev_type = "dimmer"
+                                             
+                                             # Format for Model
+                                             info = f"{d.alias} (IP: {ip}, Type: {dev_type})"
+                                             if d.is_on:
+                                                 info += " [ON]"
+                                             else:
+                                                 info += " [OFF]"
+                                             dev_summaries.append(info)
+                                             
+                                             # Format for Frontend
+                                             frontend_list.append({
+                                                 "ip": ip,
+                                                 "alias": d.alias,
+                                                 "model": d.model,
+                                                 "type": dev_type,
+                                                 "is_on": d.is_on,
+                                                 "brightness": d.brightness if d.is_bulb or d.is_dimmer else None,
+                                                 "hsv": d.hsv if d.is_bulb and d.is_color else None,
+                                                 "has_color": d.is_color if d.is_bulb else False,
+                                                 "has_brightness": d.is_dimmable if d.is_bulb or d.is_dimmer else False
+                                             })
+                                         
+                                         result_str = "No devices found in cache."
+                                         if dev_summaries:
+                                             result_str = "Found Devices (Cached):\n" + "\n".join(dev_summaries)
+                                         
+                                         # Trigger frontend update
+                                         if self.on_device_update:
+                                             self.on_device_update(frontend_list)
 
                                     function_response = types.FunctionResponse(
                                         id=fc.id, name=fc.name, response={"result": result_str}
@@ -1262,71 +1309,75 @@ class AudioLoop:
                                     
                                     print(f"[KlistarAi DEBUG] [TOOL] Tool Call: 'control_light' Target='{target}' Action='{action}'")
                                     
-                                    result_msg = f"Action '{action}' on '{target}' failed."
-                                    success = False
-                                    
-                                    if action == "turn_on":
-                                        success = await self.kasa_agent.turn_on(target)
-                                        if success:
-                                            result_msg = f"Turned ON '{target}'."
-                                    elif action == "turn_off":
-                                        success = await self.kasa_agent.turn_off(target)
-                                        if success:
-                                            result_msg = f"Turned OFF '{target}'."
-                                    elif action == "set":
-                                        success = True
-                                        result_msg = f"Updated '{target}':"
-                                    
-                                    # Apply extra attributes if 'set' or if we just turned it on and want to set them too
-                                    if success or action == "set":
-                                        if brightness is not None:
-                                            sb = await self.kasa_agent.set_brightness(target, brightness)
-                                            if sb:
-                                                result_msg += f" Set brightness to {brightness}."
-                                        if color is not None:
-                                            sc = await self.kasa_agent.set_color(target, color)
-                                            if sc:
-                                                result_msg += f" Set color to {color}."
-
-                                    # Notify Frontend of State Change
-                                    if success:
-                                        # We don't need full discovery, just refresh known state or push update
-                                        # But for simplicity, let's get the standard list representation
-                                        # KasaAgent updates its internal state on control, so we can rebuild the list
-                                        
-                                        # Quick rebuild of list from internal dict
-                                        updated_list = []
-                                        for ip, dev in self.kasa_agent.devices.items():
-                                            # We need to ensure we have the correct dict structure expected by frontend
-                                            # We duplicate logic from KasaAgent.discover_devices a bit, but that's okay for now or we can add a helper
-                                            # Ideally KasaAgent has a 'get_devices_list()' method.
-                                            # Use the cached objects in self.kasa_agent.devices
-                                            
-                                            dev_type = "unknown"
-                                            if dev.is_bulb: dev_type = "bulb"
-                                            elif dev.is_plug: dev_type = "plug"
-                                            elif dev.is_strip: dev_type = "strip"
-                                            elif dev.is_dimmer: dev_type = "dimmer"
-
-                                            d_info = {
-                                                "ip": ip,
-                                                "alias": dev.alias,
-                                                "model": dev.model,
-                                                "type": dev_type,
-                                                "is_on": dev.is_on,
-                                                "brightness": dev.brightness if dev.is_bulb or dev.is_dimmer else None,
-                                                "hsv": dev.hsv if dev.is_bulb and dev.is_color else None,
-                                                "has_color": dev.is_color if dev.is_bulb else False,
-                                                "has_brightness": dev.is_dimmable if dev.is_bulb or dev.is_dimmer else False
-                                            }
-                                            updated_list.append(d_info)
-                                            
-                                        if self.on_device_update:
-                                            self.on_device_update(updated_list)
+                                    if not self.kasa_agent:
+                                         result_msg = "KasaAgent is disabled."
+                                         if self.on_error: self.on_error("Smart Home features disabled.")
                                     else:
-                                        # Report Error
-                                        if self.on_error:
-                                            self.on_error(result_msg)
+                                         result_msg = f"Action '{action}' on '{target}' failed."
+                                         success = False
+                                         
+                                         if action == "turn_on":
+                                             success = await self.kasa_agent.turn_on(target)
+                                             if success:
+                                                 result_msg = f"Turned ON '{target}'."
+                                         elif action == "turn_off":
+                                             success = await self.kasa_agent.turn_off(target)
+                                             if success:
+                                                 result_msg = f"Turned OFF '{target}'."
+                                         elif action == "set":
+                                             success = True
+                                             result_msg = f"Updated '{target}':"
+                                         
+                                         # Apply extra attributes if 'set' or if we just turned it on and want to set them too
+                                         if success or action == "set":
+                                             if brightness is not None:
+                                                 sb = await self.kasa_agent.set_brightness(target, brightness)
+                                                 if sb:
+                                                     result_msg += f" Set brightness to {brightness}."
+                                             if color is not None:
+                                                 sc = await self.kasa_agent.set_color(target, color)
+                                                 if sc:
+                                                     result_msg += f" Set color to {color}."
+
+                                         # Notify Frontend of State Change
+                                         if success:
+                                             # We don't need full discovery, just refresh known state or push update
+                                             # But for simplicity, let's get the standard list representation
+                                             # KasaAgent updates its internal state on control, so we can rebuild the list
+                                             
+                                             # Quick rebuild of list from internal dict
+                                             updated_list = []
+                                             for ip, dev in self.kasa_agent.devices.items():
+                                                 # We need to ensure we have the correct dict structure expected by frontend
+                                                 # We duplicate logic from KasaAgent.discover_devices a bit, but that's okay for now or we can add a helper
+                                                 # Ideally KasaAgent has a 'get_devices_list()' method.
+                                                 # Use the cached objects in self.kasa_agent.devices
+                                                 
+                                                 dev_type = "unknown"
+                                                 if dev.is_bulb: dev_type = "bulb"
+                                                 elif dev.is_plug: dev_type = "plug"
+                                                 elif dev.is_strip: dev_type = "strip"
+                                                 elif dev.is_dimmer: dev_type = "dimmer"
+
+                                                 d_info = {
+                                                     "ip": ip,
+                                                     "alias": dev.alias,
+                                                     "model": dev.model,
+                                                     "type": dev_type,
+                                                     "is_on": dev.is_on,
+                                                     "brightness": dev.brightness if dev.is_bulb or dev.is_dimmer else None,
+                                                     "hsv": dev.hsv if dev.is_bulb and dev.is_color else None,
+                                                     "has_color": dev.is_color if dev.is_bulb else False,
+                                                     "has_brightness": dev.is_dimmable if dev.is_bulb or dev.is_dimmer else False
+                                                 }
+                                                 updated_list.append(d_info)
+                                                 
+                                             if self.on_device_update:
+                                                 self.on_device_update(updated_list)
+                                         else:
+                                             # Report Error
+                                             if self.on_error:
+                                                 self.on_error(result_msg)
 
                                     function_response = types.FunctionResponse(
                                         id=fc.id, name=fc.name, response={"result": result_msg}
@@ -1335,15 +1386,20 @@ class AudioLoop:
 
                                 elif fc.name == "discover_printers":
                                     print(f"[KlistarAi DEBUG] [TOOL] Tool Call: 'discover_printers'")
-                                    printers = await self.printer_agent.discover_printers()
-                                    # Format for model
-                                    if printers:
-                                        printer_list = []
-                                        for p in printers:
-                                            printer_list.append(f"{p['name']} ({p['host']}:{p['port']}, type: {p['printer_type']})")
-                                        result_str = "Found Printers:\n" + "\n".join(printer_list)
+                                    
+                                    if not self.printer_agent:
+                                         result_str = "PrinterAgent is disabled."
+                                         if self.on_error: self.on_error("3D Printer features disabled.")
                                     else:
-                                        result_str = "No printers found on network. Ensure printers are on and running OctoPrint/Moonraker."
+                                         printers = await self.printer_agent.discover_printers()
+                                         # Format for model
+                                         if printers:
+                                             printer_list = []
+                                             for p in printers:
+                                                 printer_list.append(f"{p['name']} ({p['host']}:{p['port']}, type: {p['printer_type']})")
+                                             result_str = "Found Printers:\n" + "\n".join(printer_list)
+                                         else:
+                                             result_str = "No printers found on network. Ensure printers are on and running OctoPrint/Moonraker."
                                     
                                     function_response = types.FunctionResponse(
                                         id=fc.id, name=fc.name, response={"result": result_str}
@@ -1357,20 +1413,24 @@ class AudioLoop:
                                     
                                     print(f"[KlistarAi DEBUG] [TOOL] Tool Call: 'print_stl' STL='{stl_path}' Printer='{printer}'")
                                     
-                                    # Resolve 'current' to project STL
-                                    if stl_path.lower() == "current":
-                                        stl_path = "output.stl" # Let printer agent resolve it in root_path
+                                    if not self.printer_agent:
+                                         result_str = "PrinterAgent is disabled."
+                                         if self.on_error: self.on_error("3D Printer features disabled.")
+                                    else:
+                                         # Resolve 'current' to project STL
+                                         if stl_path.lower() == "current":
+                                             stl_path = "output.stl" # Let printer agent resolve it in root_path
 
-                                    # Get current project path
-                                    project_path = str(self.project_manager.get_current_project_path())
-                                    
-                                    result = await self.printer_agent.print_stl(
-                                        stl_path, 
-                                        printer, 
-                                        profile, 
-                                        root_path=project_path
-                                    )
-                                    result_str = result.get("message", "Unknown result")
+                                         # Get current project path
+                                         project_path = str(self.project_manager.get_current_project_path())
+                                         
+                                         result = await self.printer_agent.print_stl(
+                                             stl_path, 
+                                             printer, 
+                                             profile, 
+                                             root_path=project_path
+                                         )
+                                         result_str = result.get("message", "Unknown result")
                                     
                                     function_response = types.FunctionResponse(
                                         id=fc.id, name=fc.name, response={"result": result_str}
@@ -1381,25 +1441,29 @@ class AudioLoop:
                                     printer = fc.args["printer"]
                                     print(f"[KlistarAi DEBUG] [TOOL] Tool Call: 'get_print_status' Printer='{printer}'")
                                     
-                                    status = await self.printer_agent.get_print_status(printer)
-                                    if status:
-                                        result_str = f"Printer: {status.printer}\n"
-                                        result_str += f"State: {status.state}\n"
-                                        result_str += f"Progress: {status.progress_percent:.1f}%\n"
-                                        if status.time_remaining:
-                                            result_str += f"Time Remaining: {status.time_remaining}\n"
-                                        if status.time_elapsed:
-                                            result_str += f"Time Elapsed: {status.time_elapsed}\n"
-                                        if status.filename:
-                                            result_str += f"File: {status.filename}\n"
-                                        if status.temperatures:
-                                            temps = status.temperatures
-                                            if "hotend" in temps:
-                                                result_str += f"Hotend: {temps['hotend']['current']:.0f}°C / {temps['hotend']['target']:.0f}°C\n"
-                                            if "bed" in temps:
-                                                result_str += f"Bed: {temps['bed']['current']:.0f}°C / {temps['bed']['target']:.0f}°C"
+                                    if not self.printer_agent:
+                                         result_str = "PrinterAgent is disabled."
+                                         if self.on_error: self.on_error("3D Printer features disabled.")
                                     else:
-                                        result_str = f"Could not get status for printer '{printer}'. Ensure it is discovered first."
+                                         status = await self.printer_agent.get_print_status(printer)
+                                         if status:
+                                             result_str = f"Printer: {status.printer}\n"
+                                             result_str += f"State: {status.state}\n"
+                                             result_str += f"Progress: {status.progress_percent:.1f}%\n"
+                                             if status.time_remaining:
+                                                 result_str += f"Time Remaining: {status.time_remaining}\n"
+                                             if status.time_elapsed:
+                                                 result_str += f"Time Elapsed: {status.time_elapsed}\n"
+                                             if status.filename:
+                                                 result_str += f"File: {status.filename}\n"
+                                             if status.temperatures:
+                                                 temps = status.temperatures
+                                                 if "hotend" in temps:
+                                                     result_str += f"Hotend: {temps['hotend']['current']:.0f}°C / {temps['hotend']['target']:.0f}°C\n"
+                                                 if "bed" in temps:
+                                                     result_str += f"Bed: {temps['bed']['current']:.0f}°C / {temps['bed']['target']:.0f}°C"
+                                         else:
+                                             result_str = f"Could not get status for printer '{printer}'. Ensure it is discovered first."
                                     
                                     function_response = types.FunctionResponse(
                                         id=fc.id, name=fc.name, response={"result": result_str}
@@ -1414,28 +1478,33 @@ class AudioLoop:
                                     if self.on_cad_status:
                                         self.on_cad_status("generating")
                                     
-                                    # Get project cad folder path
-                                    cad_output_dir = str(self.project_manager.get_current_project_path() / "cad")
-                                    
-                                    # Call CadAgent to iterate on the design
-                                    cad_data = await self.cad_agent.iterate_prototype(prompt, output_dir=cad_output_dir)
-                                    
-                                    if cad_data:
-                                        print(f"[KlistarAi DEBUG] [OK] CadAgent iteration returned data successfully.")
-                                        
-                                        # Dispatch to frontend
-                                        if self.on_cad_data:
-                                            print(f"[KlistarAi DEBUG] [SEND] Dispatching iterated CAD data to frontend...")
-                                            self.on_cad_data(cad_data)
-                                            print(f"[KlistarAi DEBUG] [SENT] Dispatch complete.")
-                                        
-                                        # Save to Project
-                                        self.project_manager.save_cad_artifact("output.stl", f"Iteration: {prompt}")
-                                        
-                                        result_str = f"Successfully iterated design: {prompt}. The updated 3D model is now displayed."
+                                    if not self.cad_agent:
+                                         print("[KlistarAi] [ERR] CadAgent is disabled.")
+                                         if self.on_error: self.on_error("CAD Agent is disabled in this environment.")
+                                         result_str = "CAD Agent is disabled due to missing dependencies."
                                     else:
-                                        print(f"[KlistarAi DEBUG] [ERR] CadAgent iteration returned None.")
-                                        result_str = f"Failed to iterate design with prompt: {prompt}"
+                                         # Get project cad folder path
+                                         cad_output_dir = str(self.project_manager.get_current_project_path() / "cad")
+                                         
+                                         # Call CadAgent to iterate on the design
+                                         cad_data = await self.cad_agent.iterate_prototype(prompt, output_dir=cad_output_dir)
+                                         
+                                         if cad_data:
+                                             print(f"[KlistarAi DEBUG] [OK] CadAgent iteration returned data successfully.")
+                                             
+                                             # Dispatch to frontend
+                                             if self.on_cad_data:
+                                                 print(f"[KlistarAi DEBUG] [SEND] Dispatching iterated CAD data to frontend...")
+                                                 self.on_cad_data(cad_data)
+                                                 print(f"[KlistarAi DEBUG] [SENT] Dispatch complete.")
+                                             
+                                             # Save to Project
+                                             self.project_manager.save_cad_artifact("output.stl", f"Iteration: {prompt}")
+                                             
+                                             result_str = f"Successfully iterated design: {prompt}. The updated 3D model is now displayed."
+                                         else:
+                                             print(f"[KlistarAi DEBUG] [ERR] CadAgent iteration returned None.")
+                                             result_str = f"Failed to iterate design with prompt: {prompt}"
                                     
                                     function_response = types.FunctionResponse(
                                         id=fc.id, name=fc.name, response={"result": result_str}
