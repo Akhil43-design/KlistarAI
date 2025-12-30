@@ -283,7 +283,12 @@ config = types.LiveConnectConfig(
     )
 )
 
-pya = pyaudio.PyAudio()
+# Audio Initialization
+pya = None
+try:
+    pya = pyaudio.PyAudio()
+except Exception as e:
+    print(f"[KlistarAi] [WARN] Failed to initialize PyAudio (Headless/Cloud Mode): {e}")
 
 from cad_agent import CadAgent
 from web_agent import WebAgent
@@ -534,6 +539,12 @@ class AudioLoop:
             await self.session.send(input=msg, end_of_turn=False)
 
     async def listen_audio(self):
+        if pya is None:
+            print("[KlistarAi] [WARN] PyAudio not available. Audio features disabled.")
+            while not self.stop_event.is_set():
+                await asyncio.sleep(1)
+            return
+
         mic_info = pya.get_default_input_device_info()
 
         # Resolve Input Device by Name if provided
@@ -668,7 +679,7 @@ class AudioLoop:
         cap = await asyncio.to_thread(cv2.VideoCapture, 0)
         
         if not cap.isOpened():
-             print("[KlistarAi] [ERR] Could not open camera for hand tracking. Check if camera is connected or used by another app.")
+             print("[KlistarAi] [WARN] Could not open camera (Headless/No Camera). Hand tracking disabled.")
              return
         else:
              print("[KlistarAi] Camera opened successfully.")
