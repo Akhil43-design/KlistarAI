@@ -1,4 +1,4 @@
-import React, { useRef, useState } from 'react';
+import React, { useState } from 'react';
 import YouTube from 'react-youtube';
 import { motion } from 'framer-motion';
 
@@ -13,7 +13,10 @@ export default function VideoPlayer({ videoId, title, onClose, onEnd }) {
         playerVars: {
             autoplay: 1,
             controls: 1,
-            origin: window.location.origin
+            origin: window.location.origin,
+            playsinline: 1, // Crucial for mobile to play inline not fullscreen
+            rel: 0,
+            modestbranding: 1
         },
     };
 
@@ -40,26 +43,27 @@ export default function VideoPlayer({ videoId, title, onClose, onEnd }) {
         <motion.div
             drag
             dragMomentum={false}
-            className="fixed z-50 bg-black/90 border border-white/20 rounded-xl overflow-hidden shadow-2xl w-64 md:w-[600px] cursor-move"
-            style={{ top: '5px', right: '5px', margin: '5px' }}
-            initial={{ y: -100, opacity: 0 }}
+            className="fixed z-50 bg-gray-900/95 border border-white/10 rounded-xl overflow-hidden shadow-2xl w-[90vw] md:w-[480px] max-w-lg cursor-move"
+            style={{ bottom: '100px', right: '20px', margin: '0' }} // Bottom right default
+            initial={{ y: 100, opacity: 0 }}
             animate={{ y: 0, opacity: 1 }}
         >
-            <div className="flex justify-between items-center p-2 bg-white/10 backdrop-blur-sm handle">
-                <div className="flex flex-col overflow-hidden max-w-[200px] pointer-events-none">
-                    <span className="text-xs font-bold text-white/80 uppercase tracking-wide truncate">{title || "Now Playing"}</span>
-                    <span className="text-[10px] text-white/50 uppercase tracking-wider">{playerState}</span>
+            <div className="flex justify-between items-center p-3 bg-white/5 backdrop-blur-md cursor-grab active:cursor-grabbing handle">
+                <div className="flex flex-col overflow-hidden mr-2 pointer-events-none">
+                    <span className="text-sm font-bold text-white/90 truncate">{title || "Now Playing"}</span>
+                    <span className="text-[10px] text-green-400 font-mono tracking-wider uppercase mt-0.5">{playerState === 'playing' ? '▶ Playing' : playerState}</span>
                 </div>
                 <button
                     onClick={onClose}
-                    className="text-white/60 hover:text-white p-1"
+                    className="text-white/60 hover:text-white hover:bg-white/10 p-2 rounded-full transition-colors"
                     onPointerDownCapture={(e) => e.stopPropagation()}
                 >
-                    <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line></svg>
+                    <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line></svg>
                 </button>
             </div>
-            <div className="relative pt-[56.25%] bg-black" onPointerDownCapture={(e) => e.stopPropagation()}>
-                <div className="absolute top-0 left-0 w-full h-full">
+
+            <div className="relative w-full pb-[56.25%] bg-black" onPointerDownCapture={(e) => e.stopPropagation()}>
+                <div className="absolute inset-0">
                     <YouTube
                         videoId={videoId}
                         opts={opts}
@@ -71,9 +75,12 @@ export default function VideoPlayer({ videoId, title, onClose, onEnd }) {
                     />
                 </div>
             </div>
+
             {playerState === 'error' && (
-                <div className="absolute inset-0 flex items-center justify-center bg-black/80 text-white p-4 text-center text-xs">
-                    <span className="text-red-400">Play Error. Try another song.</span>
+                <div className="absolute inset-0 flex flex-col items-center justify-center bg-black/90 text-white p-6 text-center">
+                    <span className="text-red-400 font-bold mb-1">Playback Error</span>
+                    <span className="text-xs text-gray-400">Video may be restricted or unavailable.</span>
+                    <button onClick={onClose} className="mt-3 text-xs bg-white/10 px-3 py-1 rounded-md hover:bg-white/20">Close Player</button>
                 </div>
             )}
         </motion.div>
