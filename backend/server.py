@@ -22,6 +22,7 @@ agent = GravityAgent()
 sio = socketio.AsyncServer(
     async_mode='asgi',
     cors_allowed_origins='*',
+    cors_credentials=False, # Disable credentials for wildcard support
     ping_timeout=60, 
     ping_interval=25
 )
@@ -31,7 +32,7 @@ app = FastAPI()
 app.add_middleware(
     CORSMiddleware,
     allow_origins=["*"],
-    allow_credentials=True,
+    allow_credentials=False, # Disable credentials for wildcard support
     allow_methods=["*"],
     allow_headers=["*"],
 )
