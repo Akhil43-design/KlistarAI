@@ -10,6 +10,11 @@ try:
 except ImportError:
     from backend.gravity_agent import GravityAgent
 
+from pydantic import BaseModel
+
+class ChatRequest(BaseModel):
+    message: str
+
 # Initialize Gravity Agent (The Brain)
 agent = GravityAgent()
 
@@ -36,6 +41,14 @@ app_socketio = socketio.ASGIApp(sio, app)
 @app.get("/status")
 async def status():
     return {"status": "running", "brain": "Gravity Agent"}
+
+@app.post("/chat")
+async def chat_endpoint(request: ChatRequest):
+    # Use existing agent instance
+    result = await agent.process_input(request.message, owner_verified=True)
+    # Extract text content from result dict
+    reply_text = result.get("content", "Error processing request")
+    return {"reply": reply_text}
 
 @sio.event
 async def connect(sid, environ):
