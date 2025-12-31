@@ -71,15 +71,14 @@ function App() {
       setStatus('Offline (Setup Required)');
       return;
     }
-
     console.log("Initializing socket with URL:", backendUrl);
     setStatus(`Connecting to ${backendUrl}...`);
 
     // Force WebSocket for stability
     const newSocket = io(backendUrl, {
       reconnection: true,
-      reconnectionAttempts: 10,
-      timeout: 10000,
+      reconnectionAttempts: 20,
+      timeout: 60000, // 60s timeout for Render Cold Start
       transports: ['websocket']
     });
 

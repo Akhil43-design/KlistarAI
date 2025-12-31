@@ -15,19 +15,24 @@ import struct
 import time
 import mediapipe as mp
 try:
+    # Check for DISPLAY on Linux/Cloud to avoid crashing before import if possible
+    # (Though pyautogui import usually checks this, explicit check is safer)
+    if sys.platform != 'win32' and not os.environ.get('DISPLAY'):
+        raise ImportError("Headless environment detected (No DISPLAY var)")
+
     import pyautogui
     # Fail-safe: moving mouse to corner throws exception
     pyautogui.FAILSAFE = False
     HAS_SCREEN = True
-except ImportError:
-    print("PyAutoGUI not available (Headless/Cloud Mode)")
+except (ImportError, OSError, Exception) as e:
+    print(f"PyAutoGUI not available (Headless/Cloud Mode): {e}")
     HAS_SCREEN = False
     class MockPyAutoGUI:
         def failSafeCheck(self): pass
+        def size(self): return (1920, 1080)
+        def moveTo(self, x, y): pass
+        def click(self): pass
     pyautogui = MockPyAutoGUI()
-except Exception as e:
-    print(f"PyAutoGUI error: {e}")
-    HAS_SCREEN = False
 import numpy as np
 
 from google import genai
@@ -50,7 +55,8 @@ MODEL = "models/gemini-2.5-flash-native-audio-preview-12-2025"
 DEFAULT_MODE = "camera"
 
 load_dotenv()
-client = genai.Client(http_options={"api_version": "v1beta"}, api_key=os.getenv("GEMINI_API_KEY"))
+# client = genai.Client(http_options={"api_version": "v1beta"}, api_key=os.getenv("GEMINI_API_KEY"))
+# Moved client initialization to AudioLoop to prevent import-time crash
 
 # Function definitions
 generate_cad = {
@@ -388,6 +394,18 @@ class AudioLoop:
 
         self.send_text_task = None
         self.stop_event = asyncio.Event()
+
+        # Initialize Gemini Client Lazy Loded
+        api_key = os.getenv("GEMINI_API_KEY")
+        if not api_key:
+            print("[KlistarAi] [WARN] GEMINI_API_KEY not found. AI features will fail until key is set.")
+            self.client = None
+        else:
+            try:
+                 self.client = genai.Client(http_options={"api_version": "v1beta"}, api_key=api_key)
+            except Exception as e:
+                 print(f"[KlistarAi] [ERR] Failed to create Gemini Client: {e}")
+                 self.client = None
         
         self.permissions = {} # Default Empty (Will treat unset as True)
         self._pending_confirmations = {}

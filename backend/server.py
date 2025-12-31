@@ -293,7 +293,13 @@ async def start_audio(sid, data=None):
         
         async def perform_search():
             try:
-                api_key = "AIzaSyA7dm2ng1wiFoNHMVDv9BpWNte3CWYSyqY"
+                # api_key = "AIzaSyA..." # Removed hardcoded key
+                api_key = os.getenv("YOUTUBE_API_KEY")
+                if not api_key:
+                    print("[SERVER] [WARN] YOUTUBE_API_KEY not set. Video search may fail.")
+                    await sio.emit('error', {'msg': "Video Search Unavailable (Missing API Key)"})
+                    return
+
                 url = "https://www.googleapis.com/youtube/v3/search"
                 
                 # Refine query if channel is provided
