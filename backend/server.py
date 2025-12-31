@@ -5,7 +5,10 @@ from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 import os
 import asyncio
-from gravity_agent import GravityAgent
+try:
+    from gravity_agent import GravityAgent
+except ImportError:
+    from backend.gravity_agent import GravityAgent
 
 # Initialize Gravity Agent (The Brain)
 agent = GravityAgent()
